@@ -754,11 +754,11 @@ void Cmd_help_f(const idCmdArgs& args) {
 
 //my variables
 //Ammo for spawnable units
-int Marine_Ammo;
-int MarineTech_Ammo;
-int MarineMedic_Ammo;
-int MarineHyperblaster_Ammo;
-int MarineShotgun_Ammo;
+int Marine_Ammo = 0;
+int MarineTech_Ammo = 0;
+int MarineMedic_Ammo = 0;
+int MarineHyperblaster_Ammo = 0;
+int MarineShotgun_Ammo = 0;
 //list to keep track of all player spawned shit
 idEntity* spawnedEnts[10];
 int spawnedEntTypes[10];
@@ -766,21 +766,38 @@ int currentlySpawned;
 //The resouce to manage
 int Gold = 0;
 //The current tier of entity
-int Marine_Level;
-int MarineTech_Level;
-int MarineMedic_Level;
-int MarineHyperblaster_Level;
-int MarineShotgun_Level;
+int Marine_Level = 0;
+int MarineTech_Level = 0;
+int MarineMedic_Level = 0;
+int MarineHyperblaster_Level = 0;
+int MarineShotgun_Level = 0;
 //variable that checks the phase so that you can only place and buy units durring the correct phase
 int currentPhase = -1;
 
-void Cmd_test_f(const idCmdArgs& args) {
-	common->Printf("Testing Gui \n");
-	Gold = Gold + 1;
-	gameLocal.GetLocalPlayer()->hud->SetStateString("p_ammo", va("Gold: %i", Gold));
+//Toggles toggle
+int help_menu_showing = 0;
+int levels_showing = 0;
+
+//Toggle for help and level menu
+void Cmd_toggleHelp_f(const idCmdArgs& args) {
+	if (help_menu_showing == 0) {
+		help_menu_showing = 1;
+		gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Press B to start the game. You will enter the first round. Each round You will buy and place units that will then be used to attack AI units. There are 3 phases. Buy Phase, Placement Phase, and Game Phase. You start the game with 10 gold which is used to buy units. Pressing I, O, P, K, or L when in the buy phase will buy different unit types. Marines, Techs, Medics, Hyperblasters, and Shotgunners in that order. You can upgrade units using the 1, 2, 3, 4, or 5 keys as well. Same order applies. Once finished press B and you will enter the next phase to place units (using the I, O, P, K, L keys again). Press B to move onto the battle phase. Enemy units will spawn and all entities will attack each other. Once combat finishes press B to move back to the buy phase. First to three points wins. "));
+	}else {
+		help_menu_showing = 0;
+		gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+	}
 }
-
-
+void Cmd_toggleLevel_f(const idCmdArgs& args) {
+	if (levels_showing == 0) {
+		levels_showing = 1;
+		gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrine Level: %i\nTech Level: %i\nMedic Level: %i\nHyperblaster Level: %i\nShotgunner Level: %i", Gold, Marine_Level, MarineTech_Level, MarineMedic_Level, MarineHyperblaster_Level, MarineShotgun_Level));
+	}
+	else {
+		levels_showing = 0;
+		gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+	}
+}
 
 //Need a command to start the game
 //This will bring up the buy menu and start the first phase - the buy phase
@@ -916,25 +933,47 @@ void Cmd_upgradeUnit_f(const idCmdArgs& args) {
 	}
 	else {
 		if (Gold > 3) {
-			Gold = Gold - 3;
 			const char* value = args.Argv(1);
 			if (value[0] == '1') {
-				Marine_Level = Marine_Level + 1;
+				if (Marine_Level < 3) {
+					Marine_Level = Marine_Level + 1;
+					Gold = Gold - 3;
+				}
 			}
 			else if (value[0] == '2') {
-				MarineTech_Level = MarineTech_Level + 1;
+				if (MarineTech_Level < 3) {
+					MarineTech_Level = MarineTech_Level + 1;
+					Gold = Gold - 3;
+				}
 			}
 			else if (value[0] == '3') {
-				MarineMedic_Level = MarineMedic_Level + 1;
+				if (MarineMedic_Level < 3) {
+					MarineMedic_Level = MarineMedic_Level + 1;
+					Gold = Gold - 3;
+				}
 			}
 			else if (value[0] == '4') {
-				MarineHyperblaster_Level = MarineHyperblaster_Level + 1;
+				if (MarineHyperblaster_Level < 3) {
+					MarineHyperblaster_Level = MarineHyperblaster_Level + 1;
+					Gold = Gold - 3;
+				}
 			}
 			else if (value[0] == '5') {
-				MarineShotgun_Level = MarineShotgun_Level + 1;
+				if (MarineShotgun_Level < 3) {
+					MarineShotgun_Level = MarineShotgun_Level + 1;
+					Gold = Gold - 3;
+				}
+			}
+			if (levels_showing == 1) {
+				gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrine Level: %i\nTech Level: %i\nMedic Level: %i\nHyperblaster Level: %i\nShotgunner Level: %i", Gold, Marine_Level, MarineTech_Level, MarineMedic_Level, MarineHyperblaster_Level, MarineShotgun_Level));
+			}
+			else {
+				gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+
 			}
 		}
 	}
+
 }
 
 //Command to go into the second phase - the placement phase
@@ -1004,10 +1043,14 @@ void spawnMarine(const idCmdArgs& args) {
 	currentlySpawned = currentlySpawned + 1;
 	//END MY CODE
 	yaw = player->viewAngles.yaw;
-
 	value = args.Argv(1);
-
 	dict.Set("classname", value);
+	if (Marine_Level == 2) {
+		dict.Set("classname", "char_marine_2");
+	}
+	if (Marine_Level == 3) {
+		dict.Set("classname", "char_marine_3");
+	}
 	dict.Set("angle", va("%f", yaw + 180));
 
 	org = player->GetPhysics()->GetOrigin() + idAngles(0, yaw, 0).ToForward() * 80 + idVec3(0, 0, 1);
@@ -1090,8 +1133,13 @@ void spawnMarineTech(const idCmdArgs& args) {
 	yaw = player->viewAngles.yaw;
 
 	value = args.Argv(1);
-
 	dict.Set("classname", value);
+	if (MarineTech_Level == 2) {
+		dict.Set("classname", "char_marine_tech_armed");
+	}
+	if (MarineTech_Level == 3) {
+		dict.Set("classname", "char_marine_tech_armed_2");
+	}
 	dict.Set("angle", va("%f", yaw + 180));
 
 	org = player->GetPhysics()->GetOrigin() + idAngles(0, yaw, 0).ToForward() * 80 + idVec3(0, 0, 1);
@@ -1176,18 +1224,21 @@ void spawnMarineMedic(const idCmdArgs& args) {
 	yaw = player->viewAngles.yaw;
 
 	value = args.Argv(1);
-
 	dict.Set("classname", value);
+	if (MarineMedic_Level == 2) {
+		dict.Set("classname", "char_marine_medic_armed");
+	}
+	if (MarineMedic_Level == 3) {
+		dict.Set("classname", "char_marine_medic_armed_2");
+	}
 	dict.Set("angle", va("%f", yaw + 180));
 
 	org = player->GetPhysics()->GetOrigin() + idAngles(0, yaw, 0).ToForward() * 80 + idVec3(0, 0, 1);
 	dict.Set("origin", org.ToString());
 
 	for (i = 2; i < args.Argc() - 1; i += 2) {
-
 		key = args.Argv(i);
 		value = args.Argv(i + 1);
-
 		dict.Set(key, value);
 	}
 
@@ -1262,8 +1313,13 @@ void spawnMarineHyperblaster(const idCmdArgs& args) {
 	yaw = player->viewAngles.yaw;
 
 	value = args.Argv(1);
-
 	dict.Set("classname", value);
+	if (MarineHyperblaster_Level == 2) {
+		dict.Set("classname", "char_marine_hyperblaster_2");
+	}
+	if (MarineHyperblaster_Level == 3) {
+		dict.Set("classname", "char_marine_hyperblaster_3");
+	}
 	dict.Set("angle", va("%f", yaw + 180));
 
 	org = player->GetPhysics()->GetOrigin() + idAngles(0, yaw, 0).ToForward() * 80 + idVec3(0, 0, 1);
@@ -1347,8 +1403,13 @@ void spawnMarineShotgun(const idCmdArgs& args) {
 	yaw = player->viewAngles.yaw;
 
 	value = args.Argv(1);
-
 	dict.Set("classname", value);
+	if (MarineShotgun_Level == 2) {
+		dict.Set("classname", "char_marine_shotgun_2");
+	}
+	if (MarineShotgun_Level == 3) {
+		dict.Set("classname", "char_marine_shotgun_3");
+	}
 	dict.Set("angle", va("%f", yaw + 180));
 
 	org = player->GetPhysics()->GetOrigin() + idAngles(0, yaw, 0).ToForward() * 80 + idVec3(0, 0, 1);
@@ -1408,6 +1469,7 @@ void Cmd_removeSpawn(const idCmdArgs& args) {
 	}
 	spawnedEntTypes[currentlySpawned - 1] = 0;
 	currentlySpawned = currentlySpawned - 1;
+	gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
 
 }
 
@@ -1423,12 +1485,12 @@ void Cmd_switchPhase_f(const idCmdArgs& args) {
 		MarineMedic_Ammo = 0;
 		MarineHyperblaster_Ammo = 0;
 		MarineShotgun_Ammo = 0;
-		Marine_Level = 0;
-		MarineTech_Level = 0;
-		MarineMedic_Level = 0;
-		MarineHyperblaster_Level = 0;
-		MarineShotgun_Level = 0;
-		currentlySpawned = 0;
+		Marine_Level = 1;
+		MarineTech_Level = 1;
+		MarineMedic_Level = 1;
+		MarineHyperblaster_Level = 1;
+		MarineShotgun_Level = 1;
+		currentlySpawned = 1;
 		Gold = 5;
 
 		//player needs to be invisible
@@ -3880,7 +3942,9 @@ void idGameLocal::InitConsoleCommands( void ) {
 	//MY CODE
 	//my test
 	cmdSystem->AddCommand( "help",					Cmd_help_f,					CMD_FL_GAME,				"writes test to console" );
-	cmdSystem->AddCommand( "test",					Cmd_test_f,					CMD_FL_GAME,				"writes test to console" );
+	cmdSystem->AddCommand( "helpToggle",			Cmd_toggleHelp_f,					CMD_FL_GAME,				"writes test to console" );
+	cmdSystem->AddCommand( "levelToggle",			Cmd_toggleLevel_f,					CMD_FL_GAME,				"writes test to console" );
+	
 	//phases
 	cmdSystem->AddCommand( "startMod",				Cmd_start_f,				CMD_FL_GAME,				"starts the mod game" );
 	cmdSystem->AddCommand( "startPhaseOne",			Cmd_phaseOne_f,				CMD_FL_GAME,				"starts the buy phase" );
