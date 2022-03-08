@@ -763,6 +763,24 @@ int MarineShotgun_Ammo;
 idEntity* spawnedEnts[10];
 int spawnedEntTypes[10];
 int currentlySpawned;
+//The resouce to manage
+int Gold = 0;
+//The current tier of entity
+int Marine_Level;
+int MarineTech_Level;
+int MarineMedic_Level;
+int MarineHyperblaster_Level;
+int MarineShotgun_Level;
+//variable that checks the phase so that you can only place and buy units durring the correct phase
+int currentPhase = -1;
+
+void Cmd_test_f(const idCmdArgs& args) {
+	common->Printf("Testing Gui \n");
+	Gold = Gold + 1;
+	gameLocal.GetLocalPlayer()->hud->SetStateString("p_ammo", va("Gold: %i", Gold));
+}
+
+
 
 //Need a command to start the game
 //This will bring up the buy menu and start the first phase - the buy phase
@@ -770,35 +788,194 @@ int currentlySpawned;
 void Cmd_start_f(const idCmdArgs& args) {
 	common->Printf("Game Started \n");
 	//do all the initial variable setup
+	currentPhase = 0;
 	Marine_Ammo = 0;
 	MarineTech_Ammo = 0;
 	MarineMedic_Ammo = 0;
 	MarineHyperblaster_Ammo = 0;
 	MarineShotgun_Ammo = 0;
+	Marine_Level = 0;
+	MarineTech_Level = 0;
+	MarineMedic_Level = 0;
+	MarineHyperblaster_Level = 0;
+	MarineShotgun_Level = 0;
 	currentlySpawned = 0;
+	Gold = 5;
+	
+	//player needs to be invisible
+	char* msg;
+	idPlayer* player;
+
+	player = gameLocal.GetLocalPlayer();
+	if (!player || !gameLocal.CheatsOk()) {
+		return;
+	}
+
+	if (player->fl.notarget) {
+		player->fl.notarget = false;
+		msg = "notarget OFF\n";
+	}
+	else {
+		player->fl.notarget = true;
+		msg = "notarget ON\n";
+	}
+
+	gameLocal.Printf("%s", msg);
+
+	//timescale needs to be set to zero
+
 	//bound to the same key is blah blah
-	common->Printf("Once ready to move on press KEYBIND to enter the buy phase \n");
+	common->Printf("Once ready to move on to the buy phase press KEYBIND to enter the buy phase \n");
 }
 
 //Command to go into the first phase - the buy phase
 void Cmd_phaseOne_f(const idCmdArgs& args) {
+	//need to wipe the board of all units
+	
+	if (currentlySpawned != 0) {
+		idEntity* ent = spawnedEnts[currentlySpawned - 1];
+		if (ent) {
+			//entity exists so delete it
+			delete ent;
+			//depending on the entity type spawned refund that ammo
+			if (spawnedEntTypes[currentlySpawned - 1] == 1) {
+				Marine_Ammo = Marine_Ammo + 1;
+			}
+			else if (spawnedEntTypes[currentlySpawned - 1] == 2) {
+				MarineTech_Ammo = MarineTech_Ammo + 1;
+			}
+			else if (spawnedEntTypes[currentlySpawned - 1] == 3) {
+				MarineMedic_Ammo = MarineMedic_Ammo + 1;
+			}
+			else if (spawnedEntTypes[currentlySpawned - 1] == 4) {
+				MarineHyperblaster_Ammo = MarineHyperblaster_Ammo + 1;
+			}
+			else if (spawnedEntTypes[currentlySpawned - 1] == 5) {
+				MarineShotgun_Ammo = MarineShotgun_Ammo + 1;
+			}
+			spawnedEntTypes[currentlySpawned - 1] = 0;
+			currentlySpawned = currentlySpawned - 1;
+		}else {
+			//make sure to decriment the currentlySpawned anyways
+			currentlySpawned = currentlySpawned - 1;
+		}
+		
+		
+	}
+	
+
 	common->Printf("Buy Phase Begeins \n");
+	currentPhase = 1;
+	Gold = Gold + 5;
 	common->Printf("Buy your units, you start with 10 Gold \n");
 	common->Printf("Each Unit is 1 Gold \n");
-	common->Printf("Once ready to move on press KEYBIND to enter the placement phase \n");
+	common->Printf("Upgrading a Unit is 5 Gold and will permanently increase their stats \n");
+	common->Printf("There are three tiers of upgrades for each unit \n");
+	common->Printf("To buy a unit type in 'buyUnit n' where n is the number coresponding to the unit \n");
+	common->Printf("Marines: 1 \n");
+	common->Printf("Marine Techs: 2 \n");
+	common->Printf("Marines Medics: 3 \n");
+	common->Printf("Marine Hyperblasters: 4 \n");
+	common->Printf("Marine Shotguns: 5 \n\n");
+	common->Printf("Current Inventory \n\n");
+	common->Printf("Once ready to move on type in 'startPhaseTwo' to enter the placement phase \n");
+}
+
+//command to buy units
+//SCRAPPED FUNCTION
+void Cmd_buyUnit_f(const idCmdArgs& args) {
+	if (currentPhase != 1) {
+		common->Printf("Must be in buy phase \n");
+	}else{
+		if (Gold > 0) {
+			Gold = Gold - 1;
+			const char* value = args.Argv(1);
+			if (value[0] == '1') {
+				Marine_Ammo = Marine_Ammo + 1;
+			}
+			else if (value[0] == '2') {
+				MarineTech_Ammo = MarineTech_Ammo + 1;
+			}
+			else if (value[0] == '3') {
+				MarineMedic_Ammo = MarineMedic_Ammo + 1;
+			}
+			else if (value[0] == '4') {
+				MarineHyperblaster_Ammo = MarineHyperblaster_Ammo + 1;
+			}
+			else if (value[0] == '5') {
+				MarineShotgun_Ammo = MarineShotgun_Ammo + 1;
+			}
+		}
+	}
+}
+
+//command to upgrade units
+void Cmd_upgradeUnit_f(const idCmdArgs& args) {
+	if (currentPhase != 1) {
+		common->Printf("Must be in buy phase \n");
+	}
+	else {
+		if (Gold > 3) {
+			Gold = Gold - 3;
+			const char* value = args.Argv(1);
+			if (value[0] == '1') {
+				Marine_Level = Marine_Level + 1;
+			}
+			else if (value[0] == '2') {
+				MarineTech_Level = MarineTech_Level + 1;
+			}
+			else if (value[0] == '3') {
+				MarineMedic_Level = MarineMedic_Level + 1;
+			}
+			else if (value[0] == '4') {
+				MarineHyperblaster_Level = MarineHyperblaster_Level + 1;
+			}
+			else if (value[0] == '5') {
+				MarineShotgun_Level = MarineShotgun_Level + 1;
+			}
+		}
+	}
 }
 
 //Command to go into the second phase - the placement phase
 void Cmd_phaseTwo_f(const idCmdArgs& args) {
-	common->Printf("Buy Phase Over \n");
-	common->Printf("Place Your Units \n");
+	common->Printf("Buy Phase Over Placement Phase begin\n");
+	currentPhase = 2;
+	common->Printf("Place Your Units using the I, O, P, K, L Keys. N to undo \n");
+	common->Printf("Marines: I \n");
+	common->Printf("Marine Techs: O \n");
+	common->Printf("Marines Medics: P \n");
+	common->Printf("Marine Hyperblasters: K \n");
+	common->Printf("Marine Shotguns: L \n\n");
 }
 
+//Command to go into the third phase - the attack phase
+void Cmd_phaseThree_f(const idCmdArgs& args) {
+	common->Printf("Placement Phase over once combat is finished you may go to the next phase \n");
+	currentPhase = 3;
+}
 //spawns marine woohoo
 //literally a copy pasted spawn function but with a limit
 //also adds the entity id to the list of spawned entities.
 void spawnMarine(const idCmdArgs& args) {
 #ifndef _MPBETA
+	//My code
+	//if we are in the buy phase then buy the unit
+	if (currentPhase == 1) {
+		if (Gold > 0) {
+			Gold = Gold - 1;
+			Marine_Ammo = Marine_Ammo + 1;
+			gameLocal.Printf("Purchased Marine \n");
+			gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+			return;
+		}
+		else {
+			gameLocal.Printf("You are too broke for that \n");
+			return;
+		}
+	}else if (currentPhase != 2) {
+		return;
+	}
 	const char* key, * value;
 	int			i;
 	float		yaw;
@@ -823,6 +1000,7 @@ void spawnMarine(const idCmdArgs& args) {
 		return;
 	}
 	Marine_Ammo = Marine_Ammo - 1;
+	gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
 	currentlySpawned = currentlySpawned + 1;
 	//END MY CODE
 	yaw = player->viewAngles.yaw;
@@ -842,7 +1020,6 @@ void spawnMarine(const idCmdArgs& args) {
 
 		dict.Set(key, value);
 	}
-
 	// RAVEN BEGIN
 	// kfuller: want to know the name of the entity I spawned
 	idEntity* newEnt = NULL;
@@ -866,6 +1043,22 @@ void spawnMarine(const idCmdArgs& args) {
 }
 void spawnMarineTech(const idCmdArgs& args) {
 #ifndef _MPBETA
+	//My code
+	//if we are in the buy phase then buy the unit
+	if (currentPhase == 1) {
+		if (Gold > 0) {
+			Gold = Gold - 1;
+			MarineTech_Ammo = MarineTech_Ammo + 1;
+			gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+			return;
+		}
+		else {
+			gameLocal.Printf("You are too broke for that \n");
+			return;
+		}
+	}else if (currentPhase != 2) {
+		return;
+	}
 	const char* key, * value;
 	int			i;
 	float		yaw;
@@ -891,6 +1084,7 @@ void spawnMarineTech(const idCmdArgs& args) {
 		return;
 	}
 	MarineTech_Ammo = MarineTech_Ammo - 1;
+	gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
 	currentlySpawned = currentlySpawned + 1;
 	//END MY CODE
 	yaw = player->viewAngles.yaw;
@@ -932,6 +1126,24 @@ void spawnMarineTech(const idCmdArgs& args) {
 }
 void spawnMarineMedic(const idCmdArgs& args) {
 #ifndef _MPBETA
+	//My code
+	//if we are in the buy phase then buy the unit
+	if (currentPhase == 1) {
+		if (Gold > 0) {
+			Gold = Gold - 1;
+			MarineMedic_Ammo = MarineMedic_Ammo + 1;
+			gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+
+			return;
+		}
+		else {
+			gameLocal.Printf("You are too broke for that \n");
+			return;
+		}
+	}
+	else if (currentPhase != 2) {
+		return;
+	}
 	const char* key, * value;
 	int			i;
 	float		yaw;
@@ -957,6 +1169,8 @@ void spawnMarineMedic(const idCmdArgs& args) {
 		return;
 	}
 	MarineMedic_Ammo = MarineMedic_Ammo - 1;
+	gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+
 	currentlySpawned = currentlySpawned + 1;
 	//END MY CODE
 	yaw = player->viewAngles.yaw;
@@ -998,6 +1212,24 @@ void spawnMarineMedic(const idCmdArgs& args) {
 }
 void spawnMarineHyperblaster(const idCmdArgs& args) {
 #ifndef _MPBETA
+	//My code
+	//if we are in the buy phase then buy the unit
+	if (currentPhase == 1) {
+		if (Gold > 0) {
+			Gold = Gold - 1;
+			MarineHyperblaster_Ammo = MarineHyperblaster_Ammo + 1;
+			gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+
+			return;
+		}
+		else {
+			gameLocal.Printf("You are too broke for that \n");
+			return;
+		}
+	}
+	else if (currentPhase != 2) {
+		return;
+	}
 	const char* key, * value;
 	int			i;
 	float		yaw;
@@ -1023,6 +1255,8 @@ void spawnMarineHyperblaster(const idCmdArgs& args) {
 		return;
 	}
 	MarineHyperblaster_Ammo = MarineHyperblaster_Ammo - 1;
+	gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+
 	currentlySpawned = currentlySpawned + 1;
 	//END MY CODE
 	yaw = player->viewAngles.yaw;
@@ -1064,6 +1298,23 @@ void spawnMarineHyperblaster(const idCmdArgs& args) {
 }
 void spawnMarineShotgun(const idCmdArgs& args) {
 #ifndef _MPBETA
+	//My code
+	//if we are in the buy phase then buy the unit
+	if (currentPhase == 1) {
+		if (Gold > 0) {
+			Gold = Gold - 1;
+			MarineShotgun_Ammo = MarineShotgun_Ammo + 1;
+			gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+			return;
+		}
+		else {
+			gameLocal.Printf("You are too broke for that \n");
+			return;
+		}
+	}
+	else if (currentPhase != 2) {
+		return;
+	}
 	const char* key, * value;
 	int			i;
 	float		yaw;
@@ -1089,6 +1340,8 @@ void spawnMarineShotgun(const idCmdArgs& args) {
 		return;
 	}
 	MarineShotgun_Ammo = MarineShotgun_Ammo - 1;
+	gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+
 	currentlySpawned = currentlySpawned + 1;
 	//END MY CODE
 	yaw = player->viewAngles.yaw;
@@ -1158,14 +1411,122 @@ void Cmd_removeSpawn(const idCmdArgs& args) {
 
 }
 
-//Command to open the buy menu
-void Cmd_BuyMenu(const idCmdArgs& args) {
-	Marine_Ammo = Marine_Ammo + 1;
+//Handles starting the game as well as switching phases
+void Cmd_switchPhase_f(const idCmdArgs& args) {
+	common->Printf("Switching Phases. Current Phase: %i \n", currentPhase);
+	if (currentPhase == -1) {
+		common->Printf("Game Started \n");
+		//do all the initial variable setup
+		currentPhase = 0;
+		Marine_Ammo = 0;
+		MarineTech_Ammo = 0;
+		MarineMedic_Ammo = 0;
+		MarineHyperblaster_Ammo = 0;
+		MarineShotgun_Ammo = 0;
+		Marine_Level = 0;
+		MarineTech_Level = 0;
+		MarineMedic_Level = 0;
+		MarineHyperblaster_Level = 0;
+		MarineShotgun_Level = 0;
+		currentlySpawned = 0;
+		Gold = 5;
 
+		//player needs to be invisible
+		char* msg;
+		idPlayer* player;
+
+		player = gameLocal.GetLocalPlayer();
+		if (!player || !gameLocal.CheatsOk()) {
+			return;
+		}
+
+		if (player->fl.notarget) {
+			player->fl.notarget = false;
+			msg = "notarget OFF\n";
+		}
+		else {
+			player->fl.notarget = true;
+			msg = "notarget ON\n";
+		}
+
+		gameLocal.Printf("%s", msg);
+
+		//timescale needs to be set to zero
+
+		//bound to the same key is blah blah
+		common->Printf("Once ready to move on to the buy phase press B to enter the buy phase \n");
+		gameLocal.GetLocalPlayer()->hud->SetStateString("gamePhase", va("Game Started. To Enter Buy Phase Press B"));
+	}
+	else if ((currentPhase == 0) || (currentPhase == 3)) {
+		//need to wipe the board of all units
+		int i;
+		for (i = currentlySpawned; i > 0; i--) {
+			if (currentlySpawned != 0) {
+				idEntity* ent = spawnedEnts[i - 1];
+				if (ent) {
+					//entity exists so delete it
+					delete ent;
+					//depending on the entity type spawned refund that ammo
+					if (spawnedEntTypes[currentlySpawned - 1] == 1) {
+						Marine_Ammo = Marine_Ammo + 1;
+					}
+					else if (spawnedEntTypes[currentlySpawned - 1] == 2) {
+						MarineTech_Ammo = MarineTech_Ammo + 1;
+					}
+					else if (spawnedEntTypes[currentlySpawned - 1] == 3) {
+						MarineMedic_Ammo = MarineMedic_Ammo + 1;
+					}
+					else if (spawnedEntTypes[currentlySpawned - 1] == 4) {
+						MarineHyperblaster_Ammo = MarineHyperblaster_Ammo + 1;
+					}
+					else if (spawnedEntTypes[currentlySpawned - 1] == 5) {
+						MarineShotgun_Ammo = MarineShotgun_Ammo + 1;
+					}
+					spawnedEntTypes[currentlySpawned - 1] = 0;
+					currentlySpawned = currentlySpawned - 1;
+				}
+				else {
+					//make sure to decriment the currentlySpawned anyways
+					currentlySpawned = currentlySpawned - 1;
+				}
+			}
+		}
+		gameLocal.GetLocalPlayer()->hud->SetStateString("gamePhase", va("In Buy Phase"));
+		common->Printf("Buy Phase Begeins \n");
+		currentPhase = 1;
+		Gold = Gold + 5;
+		gameLocal.GetLocalPlayer()->hud->SetStateString("gameAmmo", va("Gold: %i\nMarrines: %i\nTechs: %i\nMedics: %i\nHyperblasters: %i\nShotgunners: %i", Gold, Marine_Ammo, MarineTech_Ammo, MarineMedic_Ammo, MarineHyperblaster_Ammo, MarineShotgun_Ammo));
+		common->Printf("Buy your units, you start with 10 Gold \n");
+		common->Printf("Each Unit is 1 Gold \n");
+		common->Printf("Upgrading a Unit is 5 Gold and will permanently increase their stats \n");
+		common->Printf("There are three tiers of upgrades for each unit \n");
+		common->Printf("To buy a unit type in 'buyUnit n' where n is the number coresponding to the unit \n");
+		common->Printf("Marines: 1 \n");
+		common->Printf("Marine Techs: 2 \n");
+		common->Printf("Marines Medics: 3 \n");
+		common->Printf("Marine Hyperblasters: 4 \n");
+		common->Printf("Marine Shotguns: 5 \n\n");
+		common->Printf("Current Inventory \n\n");
+		common->Printf("Once ready to move on press B to enter the placement phase \n");
+	}
+	else if (currentPhase == 1) {
+		gameLocal.GetLocalPlayer()->hud->SetStateString("gamePhase", va("In Placement Phase"));
+		common->Printf("Buy Phase Over Placement Phase begin\n");
+		currentPhase = 2;
+		common->Printf("Place Your Units using the I, O, P, K, L Keys. N to undo \n");
+		common->Printf("Marines: I \n");
+		common->Printf("Marine Techs: O \n");
+		common->Printf("Marines Medics: P \n");
+		common->Printf("Marine Hyperblasters: K \n");
+		common->Printf("Marine Shotguns: L \n\n");
+	}else if (currentPhase == 2) {
+		gameLocal.GetLocalPlayer()->hud->SetStateString("gamePhase", va("In Combat Phase"));
+		common->Printf("Once combat is finished press B to go back to the buy phase \n");
+		currentPhase = 3;
+	}
+	common->Printf("New Phase: %i \n", currentPhase);
 }
-
-
-//END MY CODE
+//END MY
 
 // RAVEN BEGIN
 // bdube: jump points
@@ -3518,22 +3879,28 @@ void idGameLocal::InitConsoleCommands( void ) {
 	cmdSystem->AddCommand( "kill",					Cmd_Kill_f,					CMD_FL_GAME,				"kills the player" );
 	//MY CODE
 	//my test
-	cmdSystem->AddCommand( "test",					Cmd_help_f,					CMD_FL_GAME,				"writes test to console" );
+	cmdSystem->AddCommand( "help",					Cmd_help_f,					CMD_FL_GAME,				"writes test to console" );
+	cmdSystem->AddCommand( "test",					Cmd_test_f,					CMD_FL_GAME,				"writes test to console" );
 	//phases
 	cmdSystem->AddCommand( "startMod",				Cmd_start_f,				CMD_FL_GAME,				"starts the mod game" );
 	cmdSystem->AddCommand( "startPhaseOne",			Cmd_phaseOne_f,				CMD_FL_GAME,				"starts the buy phase" );
 	cmdSystem->AddCommand( "startPhaseTwo",			Cmd_phaseTwo_f,				CMD_FL_GAME,				"starts the placement phase" );
-	
+	cmdSystem->AddCommand( "startPhaseThree",		Cmd_phaseTwo_f,				CMD_FL_GAME,				"starts the game phase" );
+	cmdSystem->AddCommand( "switchPhase",			Cmd_switchPhase_f,			CMD_FL_GAME,				"switches game phase" );
+
 	//Spawning Entities
 	cmdSystem->AddCommand("spawnMarine", spawnMarine, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a marine", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
-	cmdSystem->AddCommand("spawnMarineTech", spawnMarineTech, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a marine", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
-	cmdSystem->AddCommand("spawnMarineMedic", spawnMarineMedic, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a marine", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
-	cmdSystem->AddCommand("spawnMarineHyperblaster", spawnMarineHyperblaster, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a marine", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
-	cmdSystem->AddCommand("spawnMarineShotgun", spawnMarineShotgun, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a marine", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
+	cmdSystem->AddCommand("spawnMarineTech", spawnMarineTech, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a marine tech", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
+	cmdSystem->AddCommand("spawnMarineMedic", spawnMarineMedic, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a marine medic", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
+	cmdSystem->AddCommand("spawnMarineHyperblaster", spawnMarineHyperblaster, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a marine hyperblaster", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
+	cmdSystem->AddCommand("spawnMarineShotgun", spawnMarineShotgun, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a marine shotgun", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
 
 	//Removing Entitites
 	cmdSystem->AddCommand("removeRecent", Cmd_removeSpawn, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a marine");
 
+	//resource management
+	cmdSystem->AddCommand("upgradeUnit", Cmd_upgradeUnit_f, CMD_FL_GAME | CMD_FL_CHEAT, "upgrades a unit in the shop", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
+	cmdSystem->AddCommand("buyUnit", Cmd_buyUnit_f, CMD_FL_GAME | CMD_FL_CHEAT, "spawns a unit ", idCmdSystem::ArgCompletion_Decl<DECL_ENTITYDEF>);
 	//END MY CODE
 	cmdSystem->AddCommand( "where",					Cmd_GetViewpos_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"prints the current view position" );
 	cmdSystem->AddCommand( "getviewpos",			Cmd_GetViewpos_f,			CMD_FL_GAME|CMD_FL_CHEAT,	"prints the current view position" );
